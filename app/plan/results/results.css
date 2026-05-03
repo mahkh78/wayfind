@@ -1,0 +1,127 @@
+.results-container {
+  padding: 56px 0 96px;
+}
+
+.results-header {
+  margin-bottom: 48px;
+}
+
+.results-summary {
+  color: var(--fg-muted);
+  font-size: 17px;
+  line-height: 1.5;
+  margin-top: 12px;
+}
+
+.day-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+}
+
+.day-title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  color: var(--fg);
+}
+
+.day-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  margin-bottom: 24px;
+  display: block;
+}
+
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.event-item {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.event-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.event-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--fg-dim);
+  padding-top: 4px;
+}
+
+.event-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.event-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.event-desc {
+  font-size: 15px;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+
+.event-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.event-cost {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--fg-dim);
+  background: var(--bg-elev-2);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.event-link {
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.event-link:hover {
+  text-decoration: underline;
+}
+
+/* Loading skeleton */
+.skeleton-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skel-block {
+  background: var(--bg-elev-2);
+  border-radius: 8px;
+}
