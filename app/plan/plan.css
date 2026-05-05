@@ -322,7 +322,7 @@
     border-radius: 0;
     border-left: none;
     border-right: none;
-    margin: 0 -32px;
+    margin: 0 -16px; /* matches the 16px shell padding on mobile */
   }
   .plan-styles {
     grid-template-columns: repeat(2, 1fr);
@@ -336,4 +336,7 @@
   .plan-date-sep {
     display: none;
   }
+  /* Prevent iOS viewport zoom on input focus */
+  .plan-input    { font-size: 16px; }
+  .plan-textarea { font-size: 16px; }
 }

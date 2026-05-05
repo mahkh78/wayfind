@@ -84,7 +84,7 @@ export default function DemoPreview() {
                     <span className="mono-tag">{ITINERARY[d].length} stops</span>
                   </button>
                 ))}
-                <div style={{ marginLeft: "auto", padding: "12px 8px" }}>
+                <div className="day-tab-date" style={{ marginLeft: "auto", padding: "12px 8px", flexShrink: 0, whiteSpace: "nowrap" }}>
                   <span className="mono" style={{ fontSize: 11, color: "var(--fg-dim)" }}>
                     {day === "Day 1" ? "Sat · 16 May" : "Sun · 17 May"}
                   </span>
