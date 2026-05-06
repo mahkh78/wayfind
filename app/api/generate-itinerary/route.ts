@@ -5,6 +5,49 @@ import { ITINERARY_SYSTEM_PROMPT } from "@/lib/prompts/itinerary-system";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+const RETRYABLE_CODES = new Set(["RESOURCE_EXHAUSTED", "ECONNRESET", "ETIMEDOUT"]);
+const RETRYABLE_HTTP = new Set([500, 502, 503, 504]);
+
+function isRetryable(error: any): boolean {
+  if (error.name === "AbortError" || error.code === "ABORT_ERR") return false;
+
+  const status = error.status ?? error.httpStatus ?? error.statusCode;
+  if (status !== undefined) return RETRYABLE_HTTP.has(status);
+
+  const code = error.code ?? error.errorDetails?.[0]?.reason;
+  if (code && RETRYABLE_CODES.has(code)) return true;
+
+  const msg: string = error.message ?? "";
+  return msg.includes("fetch failed") || RETRYABLE_CODES.has(msg);
+}
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: { maxAttempts: number; baseDelayMs: number }
+): Promise<T> {
+  const { maxAttempts, baseDelayMs } = options;
+  let lastError: any;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+
+      if (error.name === "AbortError" || error.code === "ABORT_ERR") throw error;
+
+      if (attempt === maxAttempts || !isRetryable(error)) throw error;
+
+      const delay = baseDelayMs * Math.pow(2, attempt - 1) + (Math.random() - 0.5) * 1000;
+      const errorCode = error.status ?? error.httpStatus ?? error.statusCode ?? error.code ?? error.message ?? "unknown";
+      console.warn(`[retry] Gemini attempt ${attempt}/${maxAttempts} failed with ${errorCode}, retrying in ${Math.round(delay)}ms`);
+      await new Promise((res) => setTimeout(res, delay));
+    }
+  }
+
+  throw lastError;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -34,17 +77,20 @@ ${inspiration ? `Inspiration: ${inspiration}` : ""}
 `;
 
     // 3. Call model
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: userMessage,
-      config: {
-        systemInstruction: ITINERARY_SYSTEM_PROMPT,
-        tools: [{ googleSearch: {} }],
-        // We do not use responseMimeType here to ensure the model focuses on grounding.
-        // We will robustly parse the JSON from the markdown output.
-        temperature: 0.7,
-      }
-    });
+    const response = await withRetry(
+      () => ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: userMessage,
+        config: {
+          systemInstruction: ITINERARY_SYSTEM_PROMPT,
+          tools: [{ googleSearch: {} }],
+          // We do not use responseMimeType here to ensure the model focuses on grounding.
+          // We will robustly parse the JSON from the markdown output.
+          temperature: 0.7,
+        }
+      }),
+      { maxAttempts: 3, baseDelayMs: 1000 }
+    );
 
     const text = response.text || "";
 
