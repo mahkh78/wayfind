@@ -40,8 +40,23 @@ export default function ItineraryResult({
 }) {
   const [activeDayIdx, setActiveDayIdx] = useState(0);
   const tabsRef = useRef<HTMLDivElement>(null);
-  const tabsWrapperRef = useRef<HTMLDivElement>(null);
   const [hasOverflow, setHasOverflow] = useState(false);
+  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
+  const [overflowingEntries, setOverflowingEntries] = useState<Set<string>>(new Set());
+  const descRefs = useRef<Map<string, HTMLParagraphElement>>(new Map());
+
+  const setDescRef = (key: string) => (el: HTMLParagraphElement | null) => {
+    if (el) descRefs.current.set(key, el);
+    else descRefs.current.delete(key);
+  };
+
+  const toggleEntry = (key: string) => {
+    setExpandedEntries(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
 
   useEffect(() => {
     const checkOverflow = () => {
@@ -53,6 +68,16 @@ export default function ItineraryResult({
     window.addEventListener('resize', checkOverflow);
     return () => window.removeEventListener('resize', checkOverflow);
   }, [data.days.length]);
+
+  // Detect which descriptions are clamped so we only show "Read more" when needed
+  useEffect(() => {
+    setExpandedEntries(new Set());
+    const overflowing = new Set<string>();
+    descRefs.current.forEach((el, key) => {
+      if (el.scrollHeight > el.clientHeight) overflowing.add(key);
+    });
+    setOverflowingEntries(overflowing);
+  }, [activeDayIdx]);
 
   if (!data || !data.days || data.days.length === 0) return null;
 
@@ -150,7 +175,10 @@ export default function ItineraryResult({
             </div>
 
             <div className="itinerary">
-              {activeDay.entries?.map((row, i) => (
+              {activeDay.entries?.map((row, i) => {
+                const key = `${activeDayIdx}-${i}`;
+                const isExpanded = expandedEntries.has(key);
+                return (
                 <div key={i} className={`itin-row ${row.type.toLowerCase() === 'dinner' || row.type.toLowerCase() === 'museum' ? 'featured' : ''}`}>
                   <div className="itin-time">
                     {row.time}
@@ -162,8 +190,18 @@ export default function ItineraryResult({
                       {row.name}
                       <span className="itin-tag">{row.type.toUpperCase()}</span>
                     </h5>
-                    <p>{row.description}</p>
-                    <div style={{ marginTop: 8, fontSize: 12, color: "var(--fg-muted)" }}>
+                    <p ref={setDescRef(key)} className={isExpanded ? '' : 'itin-desc-clamped'}>
+                      {row.description}
+                    </p>
+                    {overflowingEntries.has(key) && (
+                      <button
+                        className="itin-read-more"
+                        onClick={(e) => { e.stopPropagation(); toggleEntry(key); }}
+                      >
+                        {isExpanded ? 'Show less' : 'Read more'}
+                      </button>
+                    )}
+                    <div className="itin-address" style={{ marginTop: 8 }}>
                       {row.address}
                     </div>
                   </div>
@@ -175,7 +213,8 @@ export default function ItineraryResult({
                     <button className="icon-btn" title="Save">{Icon.bookmark(13)}</button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {(!activeDay.entries || activeDay.entries.length === 0) && (
                 <div style={{ padding: 32, textAlign: "center", color: "var(--fg-dim)" }}>
                   {activeDay.isRestDay ? "Rest day. No plans." : "No entries for this day."}
