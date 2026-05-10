@@ -4,14 +4,16 @@ import { useState } from "react";
 import BrandMark from "./BrandMark";
 import { Icon } from "./Icons";
 
-interface NavProps {
-  theme: string;
-  onToggleTheme: () => void;
-}
-
-export default function Nav({ theme, onToggleTheme }: NavProps) {
+export default function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState("dark");
   const close = () => setMenuOpen(false);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.body.dataset.theme = next;
+  };
 
   return (
     <header className="nav">
@@ -27,7 +29,7 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
           <a className="nav-link" href="#compare">Why Wayfind</a>
           <a className="nav-link" href="#how">How it works</a>
           <a className="nav-link" href="#">Pricing</a>
-          <button className="theme-toggle" onClick={onToggleTheme} aria-label="Toggle theme">
+          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === "dark" ? Icon.sun(14) : Icon.moon(14)}
           </button>
           <a className="nav-cta" href="#">Sign in {Icon.arrow(12)}</a>
@@ -54,7 +56,7 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
             <a className="nav-link" href="#"        onClick={close}>Pricing</a>
           </nav>
           <div className="nav-mobile-bottom">
-            <button className="theme-toggle" onClick={onToggleTheme} aria-label="Toggle theme">
+            <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === "dark" ? Icon.sun(14) : Icon.moon(14)}
             </button>
             <a className="nav-cta" href="#" onClick={close}>Sign in {Icon.arrow(12)}</a>

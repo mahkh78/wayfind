@@ -58,17 +58,12 @@ function generateICS(itinerary: Itinerary) {
 
 function ResultsContent() {
   const searchParams = useSearchParams();
-  const [theme, setTheme] = useState("dark");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
 
   // Store whether we've already fetched to prevent double-fetching in React Strict Mode
   const fetched = useRef(false);
-
-  useEffect(() => {
-    document.body.dataset.theme = theme;
-  }, [theme]);
 
   useEffect(() => {
     if (fetched.current) return;
@@ -107,8 +102,6 @@ function ResultsContent() {
     generate();
   }, [searchParams]);
 
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
-
   const handleExport = () => {
     if (!itinerary) return;
     const icsContent = generateICS(itinerary);
@@ -124,7 +117,7 @@ function ResultsContent() {
 
   return (
     <>
-      <Nav theme={theme} onToggleTheme={toggleTheme} />
+      <Nav />
       <main style={{ minHeight: "100vh" }}>
         <section className="results-container">
           <div className="shell" style={{ maxWidth: 680 }}>

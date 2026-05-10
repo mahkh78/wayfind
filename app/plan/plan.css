@@ -28,7 +28,7 @@
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--fg-dim);
@@ -48,7 +48,7 @@
 }
 
 .plan-value-display {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 13px;
   color: var(--fg);
   background: var(--bg);
@@ -76,7 +76,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--fg);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 15px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -98,7 +98,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--fg);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 15px;
   outline: none;
   resize: vertical;
@@ -120,7 +120,7 @@
   font-size: 11px;
   color: var(--fg-dim);
   margin-top: 8px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
 }
 
 /* Date inputs */
@@ -140,7 +140,7 @@
 .plan-date-label {
   font-size: 11px;
   color: var(--fg-dim);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   letter-spacing: 0.04em;
 }
 
@@ -235,7 +235,7 @@
   border: none;
   color: var(--fg);
   font-size: 14px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   outline: none;
   text-align: right;
   -moz-appearance: textfield;

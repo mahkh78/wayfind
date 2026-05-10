@@ -59,7 +59,7 @@
   letter-spacing: -0.02em;
 }
 .result-side .meta {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 11px;
   color: var(--fg-dim);
   letter-spacing: 0.04em;
@@ -170,7 +170,7 @@
   background: var(--accent);
 }
 .result-tab .mono-tag {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 10px;
   color: var(--fg-dim);
   margin-left: 6px;
@@ -180,7 +180,7 @@
 .result-tab-date {
   margin-left: auto;
   padding: 12px 24px 12px 8px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 11px;
   color: var(--fg-dim);
   white-space: nowrap;
@@ -206,7 +206,7 @@
 
 /* Left time + cost */
 .result-time {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 12px;
   color: var(--fg-dim);
   letter-spacing: 0.02em;
@@ -271,7 +271,7 @@
 .result-address {
   font-size: 12px;
   color: var(--fg-dim);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
 }
 
 /* Type pill */
@@ -279,7 +279,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 10px;
   color: var(--fg-dim);
   padding: 2px 6px;
@@ -308,7 +308,7 @@
   border: 1px solid var(--border);
 }
 .result-sources-heading {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -324,7 +324,7 @@
   cursor: pointer;
   font-size: 12px;
   color: var(--fg-dim);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   user-select: none;
   list-style: none;
   display: flex;
@@ -354,7 +354,7 @@
   align-items: baseline;
 }
 .result-sources-list li span {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 10px;
   color: var(--fg-dim);
   flex-shrink: 0;

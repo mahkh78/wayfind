@@ -30,7 +30,7 @@
 }
 
 .day-date {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 13px;
   color: var(--accent);
   letter-spacing: 0.04em;
@@ -58,7 +58,7 @@
 }
 
 .event-time {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 14px;
   color: var(--fg-dim);
   padding-top: 4px;
@@ -90,7 +90,7 @@
 }
 
 .event-cost {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 12px;
   color: var(--fg-dim);
   background: var(--bg-elev-2);

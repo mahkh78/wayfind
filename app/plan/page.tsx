@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
@@ -40,8 +40,6 @@ const STYLES = [
 
 function PlanFormContent() {
   const searchParams = useSearchParams();
-  const [theme, setTheme] = useState("dark");
-
   const trip = getNextSaturday();
   const [destination, setDestination] = useState(searchParams.get("destination") || "");
   const [duration, setDuration] = useState(2);
@@ -56,12 +54,6 @@ function PlanFormContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{message: string, raw?: string} | null>(null);
   const [resultData, setResultData] = useState<any>(null);
-
-  useEffect(() => {
-    document.body.dataset.theme = theme;
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Number(e.target.value);
@@ -124,7 +116,7 @@ function PlanFormContent() {
 
   return (
     <>
-      <Nav theme={theme} onToggleTheme={toggleTheme} />
+      <Nav />
       <main style={{ minHeight: "100vh" }}>
         <section style={{ padding: "56px 0 96px" }}>
           <div className="shell" style={{ maxWidth: 720 }}>
