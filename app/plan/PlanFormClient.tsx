@@ -1,10 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback, memo, forwardRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Icon } from "@/components/Icons";
 import ItineraryResult from "@/components/ItineraryResult";
 import Footer from "@/components/Footer";
+
+// Pre-computed icons — each Icon.xxx() call returns a new React element,
+// so caching at module scope avoids re-creating them on every render.
+const ICON_PIN_14 = Icon.pin(14);
+const ICON_CAL_14 = Icon.cal(14);
+const ICON_COFFEE_14 = Icon.coffee(14);
+const ICON_BOOKMARK_14 = Icon.bookmark(14);
+const ICON_SPARKLE_14 = Icon.sparkle(14);
+const ICON_LIGHTBULB_14 = Icon.lightbulb(14);
+const ICON_ARROW_14 = Icon.arrow(14);
 
 function getNextSaturday(): { start: string } {
   const today = new Date();
@@ -36,21 +46,84 @@ const STYLES = [
   { value: "mixed", label: "Mixed", icon: Icon.sparkle(24), desc: "A bit of everything" },
 ];
 
+// Memoized style cards — only re-render when `selected` changes,
+// not on every form keystroke or slider drag.
+const StyleCards = memo(function StyleCards({
+  selected,
+  onSelect,
+}: {
+  selected: string;
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <div className="plan-styles">
+      {STYLES.map(s => (
+        <button
+          type="button"
+          key={s.value}
+          className={`plan-style-card ${selected === s.value ? "active" : ""}`}
+          onClick={() => onSelect(s.value)}
+        >
+          <span className="plan-style-emoji">{s.icon}</span>
+          <span className="plan-style-name">{s.label}</span>
+          <span className="plan-style-desc">{s.desc}</span>
+        </button>
+      ))}
+    </div>
+  );
+});
+
+// Uncontrolled textarea with internal char-count state.
+// Typing only re-renders this small component, never the parent form.
+type TextareaFieldProps = {
+  maxLength: number;
+  placeholder: string;
+  label: string;
+  icon: React.ReactNode;
+};
+const TextareaField = memo(forwardRef<HTMLTextAreaElement, TextareaFieldProps>(
+  function TextareaField({ maxLength, placeholder, label, icon }, ref) {
+    const [count, setCount] = useState(0);
+    return (
+      <div className="plan-field">
+        <label className="plan-label" style={{ marginBottom: 12 }}>
+          <span className="plan-label-icon">{icon}</span>
+          {label}
+        </label>
+        <textarea
+          ref={ref}
+          className="plan-textarea"
+          placeholder={placeholder}
+          maxLength={maxLength}
+          defaultValue=""
+          onChange={(e) => setCount(e.target.value.length)}
+        />
+        <div className="plan-char-count">{count} / {maxLength}</div>
+      </div>
+    );
+  }
+));
+
 export default function PlanFormClient() {
   const searchParams = useSearchParams();
-  const trip = getNextSaturday();
+  const tripStartRef = useRef(getNextSaturday().start);
   const [destination, setDestination] = useState(searchParams.get("destination") || "");
   const [duration, setDuration] = useState(2);
-  const [startDate, setStartDate] = useState(trip.start);
-  const [endDate, setEndDate] = useState(() => addDays(trip.start, 1));
+  const [startDate, setStartDate] = useState(tripStartRef.current);
+  const [endDate, setEndDate] = useState(() => addDays(tripStartRef.current, 1));
   const [restDays, setRestDays] = useState(0);
   const [budget, setBudget] = useState(500);
   const [style, setStyle] = useState("mixed");
-  const [mustDo, setMustDo] = useState("");
-  const [inspiration, setInspiration] = useState("");
+  const mustDoRef = useRef<HTMLTextAreaElement>(null);
+  const inspirationRef = useRef<HTMLTextAreaElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{ message: string; raw?: string } | null>(null);
   const [resultData, setResultData] = useState<any>(null);
+
+  // Stable handler so StyleCards' memo doesn't break
+  const handleStyleSelect = useCallback((value: string) => {
+    setStyle(value);
+  }, []);
 
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Number(e.target.value);
@@ -81,6 +154,8 @@ export default function PlanFormClient() {
     setError(null);
     setResultData(null);
 
+    const mustDo = mustDoRef.current?.value || "";
+    const inspiration = inspirationRef.current?.value || "";
     const data = { destination, duration, startDate, endDate, restDays, budget, style, mustDo, inspiration };
 
     try {
@@ -91,9 +166,7 @@ export default function PlanFormClient() {
       });
 
       const resText = await res.text();
-
       if (!res.ok) throw new Error(resText || "An error occurred");
-
       setResultData(JSON.parse(resText));
     } catch (err: any) {
       try {
@@ -106,6 +179,8 @@ export default function PlanFormClient() {
       setIsLoading(false);
     }
   };
+
+  const showForm = !isLoading && !resultData && !error;
 
   return (
     <>
@@ -120,7 +195,7 @@ export default function PlanFormClient() {
             </div>
 
             {/* Page header */}
-            {!isLoading && !resultData && !error && (
+            {showForm && (
               <div style={{ marginBottom: 48 }}>
                 <span className="eyebrow">New trip</span>
                 <h1 style={{ fontSize: "clamp(32px, 4vw, 48px)", letterSpacing: "-0.035em", fontWeight: 600, lineHeight: 1.05, margin: "20px 0 12px" }}>
@@ -132,136 +207,128 @@ export default function PlanFormClient() {
               </div>
             )}
 
-            {/* Form */}
-            {!isLoading && !resultData && !error && (
-              <form onSubmit={handleSubmit} className="plan-form-card">
-                <div className="plan-field">
-                  <label className="plan-label">
-                    <span className="plan-label-icon">{Icon.pin(14)}</span>
-                    Destination
+            {/* Form — kept mounted via display:none so textarea refs survive "Edit my brief" */}
+            <form
+              onSubmit={handleSubmit}
+              className="plan-form-card"
+              style={{ display: showForm ? undefined : "none" }}
+            >
+              <div className="plan-field">
+                <label className="plan-label">
+                  <span className="plan-label-icon">{ICON_PIN_14}</span>
+                  Destination
+                </label>
+                <div className="plan-input-wrap">
+                  <input
+                    type="text"
+                    className="plan-input"
+                    placeholder="Where do you want to go?"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="plan-field">
+                <div className="plan-header">
+                  <label className="plan-label" style={{ marginBottom: 0 }}>
+                    <span className="plan-label-icon">{ICON_CAL_14}</span>
+                    How many days?
                   </label>
-                  <div className="plan-input-wrap">
-                    <input
-                      type="text"
-                      className="plan-input"
-                      placeholder="Where do you want to go?"
-                      value={destination}
-                      onChange={(e) => setDestination(e.target.value)}
-                      required
-                      autoFocus
-                    />
+                  <div className="plan-value-display">
+                    {duration} <span style={{ color: "var(--fg-dim)" }}>days</span>
                   </div>
                 </div>
+                <input type="range" min="1" max="14" step="1" value={duration} onChange={handleDurationChange} className="plan-slider" />
+              </div>
 
+              <div className="plan-field">
+                <label className="plan-label">
+                  <span className="plan-label-icon">{ICON_CAL_14}</span>
+                  Dates
+                </label>
+                <div className="plan-dates">
+                  <div className="plan-date-col">
+                    <span className="plan-date-label">Start</span>
+                    <div className="plan-date-input-wrap">
+                      <span className="plan-date-icon">{ICON_CAL_14}</span>
+                      <input type="date" className="plan-input plan-input-date" value={startDate} onChange={handleStartDateChange} required />
+                    </div>
+                  </div>
+                  <div className="plan-date-sep">→</div>
+                  <div className="plan-date-col">
+                    <span className="plan-date-label">End</span>
+                    <div className="plan-date-input-wrap">
+                      <span className="plan-date-icon">{ICON_CAL_14}</span>
+                      <input type="date" className="plan-input plan-input-date" value={endDate} onChange={handleEndDateChange} required />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {duration > 1 && (
                 <div className="plan-field">
                   <div className="plan-header">
                     <label className="plan-label" style={{ marginBottom: 0 }}>
-                      <span className="plan-label-icon">{Icon.cal(14)}</span>
-                      How many days?
+                      <span className="plan-label-icon">{ICON_COFFEE_14}</span>
+                      How many rest days do you want during the trip?
                     </label>
                     <div className="plan-value-display">
-                      {duration} <span style={{ color: "var(--fg-dim)" }}>days</span>
+                      {restDays} <span style={{ color: "var(--fg-dim)" }}>days</span>
                     </div>
                   </div>
-                  <input type="range" min="1" max="14" step="1" value={duration} onChange={handleDurationChange} className="plan-slider" />
+                  <input type="range" min="0" max={duration - 1} step="1" value={restDays} onChange={(e) => setRestDays(Number(e.target.value))} className="plan-slider" />
+                  <div className="plan-helper">Days with light activity only — sleep in, café, no big plans.</div>
                 </div>
+              )}
 
-                <div className="plan-field">
-                  <label className="plan-label">
-                    <span className="plan-label-icon">{Icon.cal(14)}</span>
-                    Dates
+              <div className="plan-field">
+                <div className="plan-header">
+                  <label className="plan-label" style={{ marginBottom: 0 }}>
+                    <span className="plan-label-icon" style={{ fontSize: 14, fontWeight: 600 }}>€</span>
+                    Budget in €
                   </label>
-                  <div className="plan-dates">
-                    <div className="plan-date-col">
-                      <span className="plan-date-label">Start</span>
-                      <div className="plan-date-input-wrap">
-                        <span className="plan-date-icon">{Icon.cal(14)}</span>
-                        <input type="date" className="plan-input plan-input-date" value={startDate} onChange={handleStartDateChange} required />
-                      </div>
-                    </div>
-                    <div className="plan-date-sep">→</div>
-                    <div className="plan-date-col">
-                      <span className="plan-date-label">End</span>
-                      <div className="plan-date-input-wrap">
-                        <span className="plan-date-icon">{Icon.cal(14)}</span>
-                        <input type="date" className="plan-input plan-input-date" value={endDate} onChange={handleEndDateChange} required />
-                      </div>
-                    </div>
+                  <div className="plan-value-display" style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px" }}>
+                    <input type="number" min="100" max="20000" step="100" value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="plan-number-input" />
+                    <span style={{ color: "var(--fg-dim)" }}>€</span>
                   </div>
                 </div>
+                <input type="range" min="100" max="20000" step="100" value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="plan-slider" />
+                <div className="plan-helper">Total budget for the trip. Includes activities and food. Excludes flights and hotel.</div>
+              </div>
 
-                {duration > 1 && (
-                  <div className="plan-field">
-                    <div className="plan-header">
-                      <label className="plan-label" style={{ marginBottom: 0 }}>
-                        <span className="plan-label-icon">{Icon.coffee(14)}</span>
-                        How many rest days do you want during the trip?
-                      </label>
-                      <div className="plan-value-display">
-                        {restDays} <span style={{ color: "var(--fg-dim)" }}>days</span>
-                      </div>
-                    </div>
-                    <input type="range" min="0" max={duration - 1} step="1" value={restDays} onChange={(e) => setRestDays(Number(e.target.value))} className="plan-slider" />
-                    <div className="plan-helper">Days with light activity only — sleep in, café, no big plans.</div>
-                  </div>
-                )}
+              <div className="plan-field">
+                <label className="plan-label" style={{ marginBottom: 12 }}>
+                  <span className="plan-label-icon">{ICON_BOOKMARK_14}</span>
+                  Style
+                </label>
+                <StyleCards selected={style} onSelect={handleStyleSelect} />
+              </div>
 
-                <div className="plan-field">
-                  <div className="plan-header">
-                    <label className="plan-label" style={{ marginBottom: 0 }}>
-                      <span className="plan-label-icon" style={{ fontSize: 14, fontWeight: 600 }}>€</span>
-                      Budget in €
-                    </label>
-                    <div className="plan-value-display" style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px" }}>
-                      <input type="number" min="100" max="20000" step="100" value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="plan-number-input" />
-                      <span style={{ color: "var(--fg-dim)" }}>€</span>
-                    </div>
-                  </div>
-                  <input type="range" min="100" max="20000" step="100" value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="plan-slider" />
-                  <div className="plan-helper">Total budget for the trip. Includes activities and food. Excludes flights and hotel.</div>
-                </div>
+              <TextareaField
+                ref={mustDoRef}
+                maxLength={300}
+                placeholder="e.g. see the Colosseum at sunset, eat real carbonara, visit the Vatican"
+                label="Anything you absolutely want to do?"
+                icon={ICON_SPARKLE_14}
+              />
 
-                <div className="plan-field">
-                  <label className="plan-label" style={{ marginBottom: 12 }}>
-                    <span className="plan-label-icon">{Icon.bookmark(14)}</span>
-                    Style
-                  </label>
-                  <div className="plan-styles">
-                    {STYLES.map(s => (
-                      <button type="button" key={s.value} className={`plan-style-card ${style === s.value ? "active" : ""}`} onClick={() => setStyle(s.value)}>
-                        <span className="plan-style-emoji">{s.icon}</span>
-                        <span className="plan-style-name">{s.label}</span>
-                        <span className="plan-style-desc">{s.desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <TextareaField
+                ref={inspirationRef}
+                maxLength={500}
+                placeholder="Paste a place name, an Instagram caption, a blog quote, a TikTok description, or a URL. We'll work it in."
+                label="Something you saw and want to include?"
+                icon={ICON_LIGHTBULB_14}
+              />
 
-                <div className="plan-field">
-                  <label className="plan-label" style={{ marginBottom: 12 }}>
-                    <span className="plan-label-icon">{Icon.sparkle(14)}</span>
-                    Anything you absolutely want to do?
-                  </label>
-                  <textarea className="plan-textarea" placeholder="e.g. see the Colosseum at sunset, eat real carbonara, visit the Vatican" maxLength={300} value={mustDo} onChange={(e) => setMustDo(e.target.value)} />
-                  <div className="plan-char-count">{mustDo.length} / 300</div>
-                </div>
-
-                <div className="plan-field">
-                  <label className="plan-label" style={{ marginBottom: 12 }}>
-                    <span className="plan-label-icon">{Icon.lightbulb(14)}</span>
-                    Something you saw and want to include?
-                  </label>
-                  <textarea className="plan-textarea" placeholder="Paste a place name, an Instagram caption, a blog quote, a TikTok description, or a URL. We'll work it in." maxLength={500} value={inspiration} onChange={(e) => setInspiration(e.target.value)} />
-                  <div className="plan-char-count">{inspiration.length} / 500</div>
-                </div>
-
-                <div style={{ marginTop: 16 }}>
-                  <button type="submit" className="btn btn-primary" style={{ width: "100%", padding: "16px 24px", fontSize: 16, borderRadius: 12 }}>
-                    Generate my trip {Icon.arrow(14)}
-                  </button>
-                </div>
-              </form>
-            )}
+              <div style={{ marginTop: 16 }}>
+                <button type="submit" className="btn btn-primary" style={{ width: "100%", padding: "16px 24px", fontSize: 16, borderRadius: 12 }}>
+                  Generate my trip {ICON_ARROW_14}
+                </button>
+              </div>
+            </form>
 
             {/* Loading */}
             {isLoading && (
@@ -291,7 +358,7 @@ export default function PlanFormClient() {
                     </details>
                   )}
                   <button className="btn btn-ghost" onClick={() => setError(null)} style={{ marginTop: 24 }}>
-                    {Icon.arrow(14)} Edit my brief
+                    {ICON_ARROW_14} Edit my brief
                   </button>
                 </div>
               </div>
